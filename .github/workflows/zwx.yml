@@ -1,0 +1,36 @@
+name: Check Alarms and Notify
+on:
+  schedule:
+    - cron: "*/3 * * * *"  # Runs every 3 minutes
+  workflow_dispatch:
+
+jobs:
+  check-alarms:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run alarm check script
+        run: node zwx.js
+        env:
+          X1: ${{ secrets.X1 }}
+          X2: ${{ secrets.X2 }}
+          X3: ${{ secrets.X3 }}
+          X4: ${{ secrets.X4 }}
+          Y1: ${{ secrets.Y1 }}
+          Y2: ${{ secrets.Y2 }}
+          Y3: ${{ secrets.Y3 }} 
+          Y4: ${{ secrets.Y4 }} 
+          Z1: ${{ secrets.Z1 }}
+          Z2: ${{ secrets.Z2 }}
+          H1: ${{ secrets.H1 }}
