@@ -1,0 +1,18 @@
+{
+  "name": "z-w-x-alarms",
+  "version": "1.0.0",
+  "description": "z-w-x-alarms by Amissi",
+  "main": "zwx.js",
+  "scripts": {
+    "start": "node zwx.js"
+  },
+ "dependencies": {
+    "mongodb": "^5.7.0",
+    "pusher": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Amissi Dieudonné - Paddy",
+  "license": "Apache 2.0"
+}
