@@ -1,4 +1,4 @@
-name: Check Alarms and Notify
+name: z-w-x
 on:
   schedule:
     - cron: "*/3 * * * *"  # Runs every 3 minutes
