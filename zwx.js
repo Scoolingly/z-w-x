@@ -1,4 +1,4 @@
-const crypto = require("crypto"); // Fixed typo
+const crypto = require("crypto");
 const { MongoClient: MClnt } = require("mongodb");
 
 const v1 = process.env.X1, v2 = process.env.X2, v3 = process.env.X3, v4 = process.env.X4;
@@ -30,7 +30,7 @@ const p4 = async () => {
         if (!r2.ok) throw new Error(`Error occurred: ${r2.status}`);
 
         const r3 = await r2.json();
-        if (r3.code === 0 && r3.record && r3.record[q1.D]) { // Check if record and access_token exist
+        if (r3.code === 0 && r3.record && r3.record[q1.D]) {
             t1 = r3.record;
             t2 = (x1 + r3.record.expires_in) * 1000;
 
@@ -40,7 +40,7 @@ const p4 = async () => {
             throw new Error("Error occurred: 401");
         }
     } catch (e) {
-        console.error("Error in p4:", e); // More specific error logging
+        console.error("Error in p4:", e);
     } finally {
         t3 = false;
     }
@@ -51,7 +51,7 @@ const p5 = async () => {
     try {
         const c1 = await p3();
         const c2 = await c1.findOne({});
-        if (c2 && c2[q1.D] && Date.now() < c2.validity) { // Check if access_token exists
+        if (c2 && c2[q1.D] && Date.now() < c2.validity) {
             t1 = { [q1.D]: c2[q1.D], expires_in: Math.floor((c2.validity - Date.now()) / 1000) };
             t2 = c2.validity;
             return t1;
@@ -59,7 +59,7 @@ const p5 = async () => {
         await p4();
         return await p5();
     } catch (e) {
-        console.error("Error in p5:", e); // More specific error logging
+        console.error("Error in p5:", e);
     }
 };
 
@@ -82,7 +82,7 @@ const p6 = async (x1, x2, x3) => {
         }
         return [];
     } catch (e) {
-        console.error("Error in p6:", e); // More specific error logging
+        console.error("Error in p6:", e);
         return [];
     }
 };
@@ -92,11 +92,20 @@ const p7 = async (x1, x2, x3) => {
         const r2 = await fetch(`https://${v3}.${u2}${p1.C}${v3}/publishes`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${v4}` },
-            body: JSON.stringify({ interests: [`${x1}_${x2}`], fcm: { notification: { title: "New Alarm!", body: `Alarm Type: ${x3[q1.H]}, IMEI: ${x1}, GeoFence ID: ${x2}, Time: ${x3[q1.K]}` }, data: { ...x3, imei: x1 } })
+            body: JSON.stringify({
+                interests: [`${x1}_${x2}`],
+                fcm: {
+                    notification: {
+                        title: "New Alarm!",
+                        body: `Alarm Type: ${x3[q1.H]}, IMEI: ${x1}, GeoFence ID: ${x2}, Time: ${x3[q1.K]}`
+                    },
+                    data: { ...x3, imei: x1 }
+                }
+            })
         });
         if (!r2.ok) throw new Error(`Error occurred: ${r2.status}`);
     } catch (e) {
-        console.error("Error in p7:", e); // More specific error logging
+        console.error("Error in p7:", e);
     }
 };
 
@@ -113,7 +122,7 @@ const p9 = async () => {
     try {
         await Promise.all(n4.map(x => p8(x)));
     } catch (e) {
-        console.error("Error in p9:", e); // More specific error logging
+        console.error("Error in p9:", e);
     } finally {
         if (d2) await d2.close();
     }
@@ -123,6 +132,6 @@ const p9 = async () => {
     try {
         await p9();
     } catch (e) {
-        console.error("Top-level error:", e); // Catch any top-level errors
+        console.error("Top-level error:", e);
     }
 })();
