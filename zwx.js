@@ -1,1 +1,128 @@
-const r=require("crypto"),{MongoClient:d}=require("mongodb"),v1=process.env.X1,v2=process.env.X2,v3=process.env.X3,v4=process.env.X4,n1=process.env.Y1,n2=process.env.Y2,n3=process.env.Y3,n4=JSON.parse(process.env.Y4),u1=process.env.Z1,u2=process.env.H1,u3=parseInt(process.env.Z2||"180"),p1={A:"/authorization",B:"/alarm/list",C:"/publish_api/v1/instances/"},q1={A:"authorization",B:"account",C:"signature",D:"access_token",E:"imei",F:"begintime",G:"endtime",H:"alarmType",I:"longitude",J:"latitude",K:"gpstime",L:"systemTime",M:"speed",N:"course",O:"geoFenceId"};let t1=null,t2=0,t3=!1,d2=null;const p3=async()=>d2||(d2=new d(n1,{useNewUrlParser:!0,useUnifiedTopology:!0}),await d2.connect()),p4=async()=>{if(t3)return;t3=!0;try{const e=Math.floor(Date.now()/1e3),t=r.createHash("md5").update(r.createHash("md5").update(v1).digest("hex")+e).digest("hex"),o=await fetch(`${u1}${p1.A}?time=${e}&${q1.B}=${v2}&${q1.C}=${t}`);if(!o.ok)throw new Error(`Error occurred: ${o.status}`);const a=await o.json();if(0===a.code&&a.record?.[q1.D]){t1=a.record,t2=(e+a.record.expires_in)*1e3;const r=await p3();await r.updateOne({},{$set:{[q1.D]:t1[q1.D],validity:t2}},{upsert:!0})}else throw new Error("Error occurred: 401")}catch{}finally{t3=!1}},p5=async()=>{if(t1&&Date.now()<t2)return t1;try{const e=await p3(),t=await e.findOne({});return t&&t[q1.D]&&Date.now()<t.validity?(t1={[q1.D]:t[q1.D],expires_in:Math.floor((t.validity-Date.now())/1e3)},t2=t.validity,t1):(await p4(),await p5())}catch{}},p6=async(e,t,o)=>{try{const a=await p5();if(!a)throw new Error("Error occurred: 403");const r=await fetch(`${u1}${p1.B}?${q1.D}=${a[q1.D]}&${q1.E}=${e}&${q1.F}=${t}&${q1.G}=${o}`);if(!r.ok)throw new Error(`Error occurred: ${r.status}`);const n=await r.json();return 0===n.code&&n.record?n.record.split(";").reduce((e,t,o,a)=>(o%8==0&&a[o]&&e.push({[q1.H]:a[o],[q1.I]:a[o+1],[q1.J]:a[o+2],[q1.K]:a[o+3],[q1.L]:a[o+4],[q1.M]:a[o+5],[q1.N]:a[o+6],[q1.O]:a[o+7]})),e),[]):[]}catch{return[]}},p7=async(e,t,o)=>{try{const a=await fetch(`https://${v3}.${u2}${p1.C}${v3}/publishes`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${v4}`},body:JSON.stringify({interests:[`${e}_${t}`],fcm:{notification:{title:"New Alarm!",body:`Alarm Type: ${o[q1.H]}, IMEI: ${e}, GeoFence ID: ${t}, Time: ${o[q1.K]}`},data:{...o,imei:e}}})});if(!a.ok)throw new Error(`Error occurred: ${a.status}`)}catch{}},p8=async e=>{const t=Math.floor(Date.now()/1e3),o=t-u3,a=await p6(e,o,t);if(a.length){const r=a.filter(e=>e&&("5"===e[q1.H]||"6"===e[q1.H])).map(t=>p7(e,t[q1.O],t));await Promise.all(r)}},p9=async()=>{await Promise.all(n4.map(e=>p8(e)))};(async()=>{await p9(),d2&&await d2.close()})();
+const crypto = require("crypto"); // Fixed typo
+const { MongoClient: MClnt } = require("mongodb");
+
+const v1 = process.env.X1, v2 = process.env.X2, v3 = process.env.X3, v4 = process.env.X4;
+const n1 = process.env.Y1, n2 = process.env.Y2, n3 = process.env.Y3, n4 = JSON.parse(process.env.Y4);
+const u1 = process.env.Z1, u2 = process.env.H1, u3 = parseInt(process.env.Z2 || "180");
+
+const p1 = { A: "/authorization", B: "/alarm/list", C: "/publish_api/v1/instances/" };
+
+const q1 = { A: "authorization", B: "account", C: "signature", D: "access_token", E: "imei", F: "begintime", G: "endtime", H: "alarmType", I: "longitude", J: "latitude", K: "gpstime", L: "systemTime", M: "speed", N: "course", O: "geoFenceId" };
+
+let t1 = null, t2 = 0, t3 = false, d2 = null;
+
+const p3 = async () => {
+    if (!d2) {
+        d2 = new MClnt(n1, { useNewUrlParser: true, useUnifiedTopology: true });
+        await d2.connect();
+    }
+    return d2.db(n2).collection(n3);
+};
+
+const p4 = async () => {
+    if (t3) return;
+    t3 = true;
+    try {
+        const x1 = Math.floor(Date.now() / 1000);
+        const x2 = crypto.createHash("md5").update(crypto.createHash("md5").update(v1).digest("hex") + x1).digest("hex");
+
+        const r2 = await fetch(`${u1}${p1.A}?time=${x1}&${q1.B}=${v2}&${q1.C}=${x2}`);
+        if (!r2.ok) throw new Error(`Error occurred: ${r2.status}`);
+
+        const r3 = await r2.json();
+        if (r3.code === 0 && r3.record && r3.record[q1.D]) { // Check if record and access_token exist
+            t1 = r3.record;
+            t2 = (x1 + r3.record.expires_in) * 1000;
+
+            const c1 = await p3();
+            await c1.updateOne({}, { $set: { [q1.D]: t1[q1.D], validity: t2 } }, { upsert: true });
+        } else {
+            throw new Error("Error occurred: 401");
+        }
+    } catch (e) {
+        console.error("Error in p4:", e); // More specific error logging
+    } finally {
+        t3 = false;
+    }
+};
+
+const p5 = async () => {
+    if (t1 && Date.now() < t2) return t1;
+    try {
+        const c1 = await p3();
+        const c2 = await c1.findOne({});
+        if (c2 && c2[q1.D] && Date.now() < c2.validity) { // Check if access_token exists
+            t1 = { [q1.D]: c2[q1.D], expires_in: Math.floor((c2.validity - Date.now()) / 1000) };
+            t2 = c2.validity;
+            return t1;
+        }
+        await p4();
+        return await p5();
+    } catch (e) {
+        console.error("Error in p5:", e); // More specific error logging
+    }
+};
+
+const p6 = async (x1, x2, x3) => {
+    try {
+        const x4 = await p5();
+        if (!x4) throw new Error("Error occurred: 403");
+
+        const r2 = await fetch(`${u1}${p1.B}?${q1.D}=${x4[q1.D]}&${q1.E}=${x1}&${q1.F}=${x2}&${q1.G}=${x3}`);
+        if (!r2.ok) throw new Error(`Error occurred: ${r2.status}`);
+
+        const r3 = await r2.json();
+        if (r3.code === 0 && r3.record) {
+            return r3.record.split(";").reduce((a, _, i, b) => {
+                if (i % 8 === 0 && b[i]) {
+                    a.push({ [q1.H]: b[i], [q1.I]: b[i + 1], [q1.J]: b[i + 2], [q1.K]: b[i + 3], [q1.L]: b[i + 4], [q1.M]: b[i + 5], [q1.N]: b[i + 6], [q1.O]: b[i + 7] });
+                }
+                return a;
+            }, []);
+        }
+        return [];
+    } catch (e) {
+        console.error("Error in p6:", e); // More specific error logging
+        return [];
+    }
+};
+
+const p7 = async (x1, x2, x3) => {
+    try {
+        const r2 = await fetch(`https://${v3}.${u2}${p1.C}${v3}/publishes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${v4}` },
+            body: JSON.stringify({ interests: [`${x1}_${x2}`], fcm: { notification: { title: "New Alarm!", body: `Alarm Type: ${x3[q1.H]}, IMEI: ${x1}, GeoFence ID: ${x2}, Time: ${x3[q1.K]}` }, data: { ...x3, imei: x1 } })
+        });
+        if (!r2.ok) throw new Error(`Error occurred: ${r2.status}`);
+    } catch (e) {
+        console.error("Error in p7:", e); // More specific error logging
+    }
+};
+
+const p8 = async (x1) => {
+    const x2 = Math.floor(Date.now() / 1000);
+    const x3 = x2 - u3;
+    const x4 = await p6(x1, x3, x2);
+    if (!x4.length) return;
+    const x5 = x4.filter(x => x && (x[q1.H] === "5" || x[q1.H] === "6")).map(x => p7(x1, x[q1.O], x));
+    await Promise.all(x5);
+};
+
+const p9 = async () => {
+    try {
+        await Promise.all(n4.map(x => p8(x)));
+    } catch (e) {
+        console.error("Error in p9:", e); // More specific error logging
+    } finally {
+        if (d2) await d2.close();
+    }
+};
+
+(async () => {
+    try {
+        await p9();
+    } catch (e) {
+        console.error("Top-level error:", e); // Catch any top-level errors
+    }
+})();
